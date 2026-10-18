@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TutorPro - 1-to-1 Tuition Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col">
+
+    <header class="bg-indigo-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-700 p-2 rounded-xl text-white font-bold text-xl shadow-inner">
+                    🎓
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">TutorPro 1-to-1</h1>
+                    <p class="text-xs text-indigo-200">Tuition Management & Lesson Tracker</p>
+                </div>
+            </div>
+            <nav class="flex flex-wrap justify-center gap-2 bg-indigo-700/60 p-1.5 rounded-xl border border-indigo-500/30">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm">Dashboard</button>
+                <button onclick="switchTab('students')" id="nav-students" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Students</button>
+                <button onclick="switchTab('sessions')" id="nav-sessions" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Sessions</button>
+                <button onclick="switchTab('finances')" id="nav-finances" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Finances</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
+
+        <!-- Notification Toast -->
+        <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm">
+            <span id="toast-icon">✅</span>
+            <span id="toast-message">Action successful!</span>
+        </div>
+
+        <!-- ================= DASHBOARD TAB ================= -->
+        <section id="tab-dashboard" class="tab-content active space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Dashboard Overview</h2>
+                    <p class="text-sm text-slate-500">Track your overall teaching hours, earnings, and recent activities.</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="openModal('student-modal')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium px-4 py-2.5 rounded-xl border border-indigo-200 transition shadow-sm flex items-center gap-2">
+                        <span>➕</span> Add Student
+                    </button>
+                    <button onclick="openModal('session-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-md flex items-center gap-2">
+                        <span>📝</span> Log Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm font-medium text-slate-500">Active Students</span>
+                        <span class="p-2 bg-indigo-50 text-indigo-600 rounded-xl text-lg">👩‍🎓</span>
+                    </div>
+                    <div class="mt-4">
+                        <h3 id="stat-students" class="text-3xl font-bold text-slate-900">0</h3>
+                        <p class="text-xs text-slate-400 mt-1">Enrolled in 1-to-1 lessons</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm font-medium text-slate-500">Total Hours Taught</span>
+                        <span class="p-2 bg-emerald-50 text-emerald-600 rounded-xl text-lg">⏱️</span>
+                    </div>
+                    <div class="mt-4">
+                        <h3 id="stat-hours" class="text-3xl font-bold text-slate-900">0 hrs</h3>
+                        <p class="text-xs text-slate-400 mt-1">Across all completed lessons</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm font-medium text-slate-500">Total Earnings</span>
+                        <span class="p-2 bg-amber-50 text-amber-600 rounded-xl text-lg">💰</span>
+                    </div>
+                    <div class="mt-4">
+                        <h3 id="stat-earnings" class="text-3xl font-bold text-slate-900">$0</h3>
+                        <p class="text-xs text-slate-400 mt-1">All-time revenue generated</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div class="flex justify-between items-start">
+                        <span class="text-sm font-medium text-slate-500">Unpaid Balance</span>
+                        <span class="p-2 bg-rose-50 text-rose-600 rounded-xl text-lg">⚠️</span>
+                    </div>
+                    <div class="mt-4">
+                        <h3 id="stat-unpaid" class="text-3xl font-bold text-rose-600">$0</h3>
+                        <p class="text-xs text-slate-400 mt-1">Pending student payments</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Sessions & Quick Student List -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-900">Recent Lessons</h3>
+                        <button onclick="switchTab('sessions')" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">View All</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+                                <tr>
+                                    <th class="p-3 rounded-l-xl">Student</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Duration</th>
+                                    <th class="p-3">Topic</th>
+                                    <th class="p-3">Amount</th>
+                                    <th class="p-3 rounded-r-xl">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-sessions-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg text-slate-900">Students Quick View</h3>
+                        <button onclick="switchTab('students')" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">Manage</button>
+                    </div>
+                    <div id="dashboard-students-list" class="space-y-3">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= STUDENTS TAB ================= -->
+        <section id="tab-students" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Students Directory</h2>
+                    <p class="text-sm text-slate-500">Manage your 1-to-1 students, subjects, and hourly rates.</p>
+                </div>
+                <button onclick="openModal('student-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-md flex items-center gap-2">
+                    <span>➕</span> Add New Student
+                </button>
+            </div>
+
+            <div id="students-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+        <!-- ================= SESSIONS TAB ================= -->
+        <section id="tab-sessions" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Lesson Logs</h2>
+                    <p class="text-sm text-slate-500">Complete history of all tuition sessions conducted.</p>
+                </div>
+                <div class="flex gap-3">
+                    <select id="session-filter" onchange="renderSessions()" class="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">All Students</option>
+                    </select>
+                    <button onclick="openModal('session-modal')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition shadow-md flex items-center gap-2">
+                        <span>📝</span> Log Session
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+                        <tr>
+                            <th class="p-3 rounded-l-xl">Student</th>
+                            <th class="p-3">Date</th>
+                            <th class="p-3">Duration</th>
+                            <th class="p-3">Hourly Rate</th>
+                            <th class="p-3">Topic / Notes</th>
+                            <th class="p-3">Total ($)</th>
+                            <th class="p-3">Payment</th>
+                            <th class="p-3 text-right rounded-r-xl">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sessions-tbody" class="divide-y divide-slate-100">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ================= FINANCES TAB ================= -->
+        <section id="tab-finances" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Financial Summary</h2>
+                    <p class="text-sm text-slate-500">Monitor payments, earnings breakdown, and pending invoices.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-lg text-slate-900 mb-2">Earnings Overview</h3>
+                    <p class="text-xs text-slate-500 mb-6">Summary of received vs pending tuition fees.</p>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                            <span class="text-sm text-slate-600">Total Revenue Collected</span>
+                            <span id="finance-collected" class="font-bold text-emerald-600 text-base">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
+                            <span class="text-sm text-slate-600">Pending Collection</span>
+                            <span id="finance-pending" class="font-bold text-rose-600 text-base">$0.00</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                            <span class="text-sm font-semibold text-indigo-900">Total Billed</span>
+                            <span id="finance-total" class="font-bold text-indigo-700 text-lg">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
+                    <h3 class="font-bold text-lg text-slate-900 mb-4">Pending Payments Checklist</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm text-slate-600">
+                            <thead class="bg-slate-50 text-slate-700 uppercase text-xs font-semibold">
+                                <tr>
+                                    <th class="p-3 rounded-l-xl">Student</th>
+                                    <th class="p-3">Date</th>
+                                    <th class="p-3">Topic</th>
+                                    <th class="p-3">Amount</th>
+                                    <th class="p-3 text-right rounded-r-xl">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pending-tbody" class="divide-y divide-slate-100">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Add/Edit Student Modal -->
+    <div id="student-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden border border-slate-100">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="student-modal-title" class="font-bold text-slate-900">Add New Student</h3>
+                <button onclick="closeModal('student-modal')" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+            </div>
+            <form id="student-form" onsubmit="saveStudent(event)" class="p-6 space-y-4">
+                <input type="hidden" id="student-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Student Name</label>
+                    <input type="text" id="student-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Alex Johnson">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Subject / Grade</label>
+                    <input type="text" id="student-subject" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Advanced Physics (Grade 11)">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Hourly Rate ($)</label>
+                    <input type="number" step="0.5" id="student-rate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 45">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Phone (Optional)</label>
+                        <input type="text" id="student-phone" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Phone number">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Email (Optional)</label>
+                        <input type="email" id="student-email" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Email address">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Notes / Goals</label>
+                    <textarea id="student-notes" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Learning goals, weak areas..."></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('student-modal')" class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-sm font-medium text-white transition shadow-sm">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Session Modal -->
+    <div id="session-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden border border-slate-100">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-900">Log Tuition Session</h3>
+                <button onclick="closeModal('session-modal')" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+            </div>
+            <form id="session-form" onsubmit="saveSession(event)" class="p-6 space-y-4">
+                <input type="hidden" id="session-id">
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Select Student</label>
+                    <select id="session-student" required onchange="updateSessionAmount()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Date</label>
+                        <input type="date" id="session-date" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Duration (Hours)</label>
+                        <input type="number" step="0.25" min="0.25" id="session-hours" required oninput="updateSessionAmount()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" value="1.0">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Topic Covered</label>
+                    <input type="text" id="session-topic" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. Differentiation & Integration">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Total Fee ($)</label>
+                        <input type="number" step="0.5" id="session-amount" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Payment Status</label>
+                        <select id="session-status" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="false">Unpaid</option>
+                            <option value="true">Paid</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="closeModal('session-modal')" class="px-4 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">Cancel</button>
+                    <button type="submit" class="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-sm font-medium text-white transition shadow-sm">Save Session</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initial Mock Data if LocalStorage is empty
+        const defaultStudents = [
+            { id: 'st-1', name: 'Alice Smith', subject: 'Mathematics (Form 4)', rate: 45, phone: '+1 555-0192', email: 'alice@example.com', notes: 'Strong in algebra, needs practice in trigonometry.' },
+            { id: 'st-2', name: 'Benjamin Lee', subject: 'Physics (IGCSE)', rate: 50, phone: '+1 555-0143', email: 'ben@example.com', notes: 'Preparing for final exams in November.' },
+            { id: 'st-3', name: 'Chloe Davis', subject: 'Chemistry (A-Levels)', rate: 60, phone: '+1 555-0188', email: 'chloe@example.com', notes: 'Organic chemistry focus.' }
+        ];
+
+        const defaultSessions = [
+            { id: 'se-1', studentId: 'st-1', date: '2026-06-02', hours: 1.5, topic: 'Trigonometric Identities', amount: 67.5, paid: true },
+            { id: 'se-2', studentId: 'st-2', date: '2026-06-03', hours: 2.0, topic: 'Newton’s Laws of Motion', amount: 100, paid: false },
+            { id: 'se-3', studentId: 'st-3', date: '2026-06-04', hours: 1.0, topic: 'Enthalpy & Bond Energies', amount: 60, paid: false }
+        ];
+
+        let state = {
+            students: JSON.parse(localStorage.getItem('tutor_students')) || defaultStudents,
+            sessions: JSON.parse(localStorage.getItem('tutor_sessions')) || defaultSessions
+        };
+
+        function saveData() {
+            localStorage.setItem('tutor_students', JSON.stringify(state.students));
+            localStorage.setItem('tutor_sessions', JSON.stringify(state.sessions));
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            const iconEl = document.getElementById('toast-icon');
+            msgEl.textContent = message;
+            iconEl.textContent = type === 'success' ? '✅' : '⚠️';
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(btn => {
+                btn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600";
+            });
+
+            document.getElementById('tab-' + tabId).classList.add('active');
+            const activeBtn = document.getElementById('nav-' + tabId);
+            activeBtn.className = "px-4 py-2 rounded-lg text-sm font-medium transition-all bg-white text-indigo-700 shadow-sm";
+
+            renderAll();
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            if (modalId === 'session-modal') {
+                populateStudentDropdown();
+                document.getElementById('session-date').valueAsDate = new Date();
+                updateSessionAmount();
+            } else if (modalId === 'student-modal') {
+                document.getElementById('student-form').reset();
+                document.getElementById('student-id').value = '';
+                document.getElementById('student-modal-title').textContent = 'Add New Student';
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+        }
+
+        function populateStudentDropdown() {
+            const select = document.getElementById('session-student');
+            select.innerHTML = '';
+            state.students.forEach(st => {
+                const opt = document.createElement('option');
+                opt.value = st.id;
+                opt.textContent = `${st.name} (${st.subject} - $${st.rate}/hr)`;
+                select.appendChild(opt);
+            });
+            updateSessionAmount();
+        }
+
+        function updateSessionAmount() {
+            const studentId = document.getElementById('session-student').value;
+            const hours = parseFloat(document.getElementById('session-hours').value) || 0;
+            const student = state.students.find(s => s.id === studentId);
+            if (student) {
+                document.getElementById('session-amount').value = (student.rate * hours).toFixed(2);
+            }
+        }
+
+        function saveStudent(e) {
+            e.preventDefault();
+            const id = document.getElementById('student-id').value;
+            const name = document.getElementById('student-name').value;
+            const subject = document.getElementById('student-subject').value;
+            const rate = parseFloat(document.getElementById('student-rate').value);
+            const phone = document.getElementById('student-phone').value;
+            const email = document.getElementById('student-email').value;
+            const notes = document.getElementById('student-notes').value;
+
+            if (id) {
+                const st = state.students.find(s => s.id === id);
+                if (st) {
+                    st.name = name; st.subject = subject; st.rate = rate; st.phone = phone; st.email = email; st.notes = notes;
+                }
+                showToast('Student updated successfully!');
+            } else {
+                const newStudent = { id: 'st-' + Date.now(), name, subject, rate, phone, email, notes };
+                state.students.push(newStudent);
+                showToast('New student added successfully!');
+            }
+
+            saveData();
+            closeModal('student-modal');
+            renderAll();
+        }
+
+        function editStudent(id) {
+            const st = state.students.find(s => s.id === id);
+            if (!st) return;
+            document.getElementById('student-id').value = st.id;
+            document.getElementById('student-name').value = st.name;
+            document.getElementById('student-subject').value = st.subject;
+            document.getElementById('student-rate').value = st.rate;
+            document.getElementById('student-phone').value = st.phone || '';
+            document.getElementById('student-email').value = st.email || '';
+            document.getElementById('student-notes').value = st.notes || '';
+            document.getElementById('student-modal-title').textContent = 'Edit Student Details';
+            openModal('student-modal');
+        }
+
+        function deleteStudent(id) {
+            state.students = state.students.filter(s => s.id !== id);
+            state.sessions = state.sessions.filter(se => se.studentId !== id);
+            saveData();
+            renderAll();
+            showToast('Student and associated logs removed.');
+        }
+
+        function saveSession(e) {
+            e.preventDefault();
+            const studentId = document.getElementById('session-student').value;
+            const date = document.getElementById('session-date').value;
+            const hours = parseFloat(document.getElementById('session-hours').value);
+            const topic = document.getElementById('session-topic').value;
+            const amount = parseFloat(document.getElementById('session-amount').value);
+            const paid = document.getElementById('session-status').value === 'true';
+
+            const newSession = { id: 'se-' + Date.now(), studentId, date, hours, topic, amount, paid };
+            state.sessions.unshift(newSession);
+
+            saveData();
+            closeModal('session-modal');
+            renderAll();
+            showToast('Tuition session logged successfully!');
+        }
+
+        function deleteSession(id) {
+            state.sessions = state.sessions.filter(se => se.id !== id);
+            saveData();
+            renderAll();
+            showToast('Session log deleted.');
+        }
+
+        function togglePaymentStatus(id) {
+            const session = state.sessions.find(s => s.id === id);
+            if (session) {
+                session.paid = !session.paid;
+                saveData();
+                renderAll();
+                showToast(session.paid ? 'Marked as Paid!' : 'Marked as Unpaid.');
+            }
+        }
+
+        // Render calculations and UI components
+        function renderAll() {
+            renderDashboard();
+            renderStudents();
+            renderSessions();
+            renderFinances();
+        }
+
+        function renderDashboard() {
+            const totalStudents = state.students.length;
+            const totalHours = state.sessions.reduce((acc, s) => acc + s.hours, 0);
+            const totalEarnings = state.sessions.reduce((acc, s) => acc + s.amount, 0);
+            const unpaidBalance = state.sessions.filter(s => !s.paid).reduce((acc, s) => acc + s.amount, 0);
+
+            document.getElementById('stat-students').textContent = totalStudents;
+            document.getElementById('stat-hours').textContent = totalHours.toFixed(1) + ' hrs';
+            document.getElementById('stat-earnings').textContent = '$' + totalEarnings.toFixed(2);
+            document.getElementById('stat-unpaid').textContent = '$' + unpaidBalance.toFixed(2);
+
+            // Recent Sessions Table
+            const tbody = document.getElementById('recent-sessions-tbody');
+            tbody.innerHTML = '';
+            const recent = state.sessions.slice(0, 5);
+            if (recent.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-slate-400">No sessions recorded yet.</td></tr>`;
+            } else {
+                recent.forEach(se => {
+                    const student = state.students.find(s => s.id === se.studentId);
+                    const name = student ? student.name : 'Unknown Student';
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3 font-medium text-slate-900">${name}</td>
+                            <td class="p-3">${se.date}</td>
+                            <td class="p-3">${se.hours} hrs</td>
+                            <td class="p-3">${se.topic}</td>
+                            <td class="p-3 font-semibold text-slate-900">$${se.amount.toFixed(2)}</td>
+                            <td class="p-3">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-semibold ${se.paid ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200'}">
+                                    ${se.paid ? 'Paid' : 'Unpaid'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Dashboard Students Quick View
+            const dStudents = document.getElementById('dashboard-students-list');
+            dStudents.innerHTML = '';
+            if (state.students.length === 0) {
+                dStudents.innerHTML = `<p class="text-xs text-slate-400">No students added.</p>`;
+            } else {
+                state.students.slice(0, 4).forEach(st => {
+                    dStudents.innerHTML += `
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                            <div>
+                                <h4 class="text-sm font-semibold text-slate-900">${st.name}</h4>
+                                <p class="text-xs text-slate-500">${st.subject}</p>
+                            </div>
+                            <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">$${st.rate}/hr</span>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function renderStudents() {
+            const grid = document.getElementById('students-grid');
+            grid.innerHTML = '';
+            if (state.students.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No students found. Click "Add New Student" to get started.</div>`;
+                return;
+            }
+
+            state.students.forEach(st => {
+                const stSessions = state.sessions.filter(se => se.studentId === st.id);
+                const totalHoursSt = stSessions.reduce((acc, s) => acc + s.hours, 0);
+                const totalEarnedSt = stSessions.reduce((acc, s) => acc + s.amount, 0);
+
+                grid.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">${st.name}</h3>
+                                    <p class="text-xs font-medium text-indigo-600">${st.subject}</p>
+                                </div>
+                                <span class="bg-slate-100 text-slate-700 font-bold text-sm px-3 py-1 rounded-xl">$${st.rate}/hr</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-2 mb-4">${st.notes || 'No learning notes added yet.'}</p>
+                            <div class="space-y-1.5 text-xs text-slate-500 border-t border-slate-100 pt-3">
+                                <div class="flex justify-between"><span>Phone:</span> <span class="font-medium text-slate-700">${st.phone || 'N/A'}</span></div>
+                                <div class="flex justify-between"><span>Email:</span> <span class="font-medium text-slate-700">${st.email || 'N/A'}</span></div>
+                                <div class="flex justify-between"><span>Lessons completed:</span> <span class="font-medium text-slate-700">${stSessions.length} (${totalHoursSt} hrs)</span></div>
+                                <div class="flex justify-between"><span>Total generated:</span> <span class="font-medium text-emerald-600">$${totalEarnedSt.toFixed(2)}</span></div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 mt-6 pt-3 border-t border-slate-100">
+                            <button onclick="editStudent('${st.id}')" class="flex-1 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold py-2 rounded-xl transition border border-slate-200">Edit</button>
+                            <button onclick="deleteStudent('${st.id}')" class="bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-semibold px-3 py-2 rounded-xl transition border border-rose-200">Delete</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderSessions() {
+            // Populate student filter dropdown
+            const filterSelect = document.getElementById('session-filter');
+            const currentFilter = filterSelect.value;
+            filterSelect.innerHTML = `<option value="all">All Students</option>`;
+            state.students.forEach(st => {
+                filterSelect.innerHTML += `<option value="${st.id}">${st.name}</option>`;
+            });
+            filterSelect.value = currentFilter;
+
+            const tbody = document.getElementById('sessions-tbody');
+            tbody.innerHTML = '';
+
+            let filteredSessions = state.sessions;
+            if (currentFilter !== 'all') {
+                filteredSessions = state.sessions.filter(se => se.studentId === currentFilter);
+            }
+
+            if (filteredSessions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-slate-400">No lesson logs found.</td></tr>`;
+                return;
+            }
+
+            filteredSessions.forEach(se => {
+                const student = state.students.find(s => s.id === se.studentId);
+                const name = student ? student.name : 'Unknown Student';
+                const rate = student ? student.rate : (se.amount / se.hours);
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-medium text-slate-900">${name}</td>
+                        <td class="p-3">${se.date}</td>
+                        <td class="p-3">${se.hours} hrs</td>
+                        <td class="p-3">$${rate.toFixed(2)}</td>
+                        <td class="p-3">${se.topic}</td>
+                        <td class="p-3 font-semibold text-slate-900">$${se.amount.toFixed(2)}</td>
+                        <td class="p-3">
+                            <button onclick="togglePaymentStatus('${se.id}')" class="px-2.5 py-1 rounded-full text-xs font-semibold transition ${se.paid ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 hover:bg-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100'}">
+                                ${se.paid ? 'Paid' : 'Unpaid'}
+                            </button>
+                        </td>
+                        <td class="p-3 text-right">
+                            <button onclick="deleteSession('${se.id}')" class="text-slate-400 hover:text-rose-600 text-xs font-medium transition">Remove</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderFinances() {
+            const totalCollected = state.sessions.filter(s => s.paid).reduce((acc, s) => acc + s.amount, 0);
+            const pendingCollection = state.sessions.filter(s => !s.paid).reduce((acc, s) => acc + s.amount, 0);
+            const totalBilled = totalCollected + pendingCollection;
+
+            document.getElementById('finance-collected').textContent = '$' + totalCollected.toFixed(2);
+            document.getElementById('finance-pending').textContent = '$' + pendingCollection.toFixed(2);
+            document.getElementById('finance-total').textContent = '$' + totalBilled.toFixed(2);
+
+            // Pending Payments Checklist Table
+            const tbody = document.getElementById('pending-tbody');
+            tbody.innerHTML = '';
+            const unpaidSessions = state.sessions.filter(s => !s.paid);
+
+            if (unpaidSessions.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">All tuition sessions have been paid! 🎉</td></tr>`;
+            } else {
+                unpaidSessions.forEach(se => {
+                    const student = state.students.find(s => s.id === se.studentId);
+                    const name = student ? student.name : 'Unknown Student';
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50 transition">
+                            <td class="p-3 font-medium text-slate-900">${name}</td>
+                            <td class="p-3">${se.date}</td>
+                            <td class="p-3">${se.topic}</td>
+                            <td class="p-3 font-semibold text-rose-600">$${se.amount.toFixed(2)}</td>
+                            <td class="p-3 text-right">
+                                <button onclick="togglePaymentStatus('${se.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition shadow-sm">Mark as Paid</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        // Initialize App on load
+        window.onload = function() {
+            renderAll();
+        };
+    </script>
+</body>
+</html>
