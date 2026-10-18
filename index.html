@@ -235,23 +235,45 @@
                                 <tr>
                                     <th class="p-3 rounded-l-xl">Student</th>
                                     <th class="p-3">Date</th>
-                                    <th class="p-3">Topic</th>
-                                    <th class="p-3">Amount</th>
-                                    <th class="p-3 text-right rounded-r-xl">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pending-tbody" class="divide-y divide-slate-100">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                            <th class="p-3">Topic</th>
+                            <th class="p-3">Amount</th>
+                            <th class="p-3 text-right rounded-r-xl">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pending-tbody" class="divide-y divide-slate-100">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
             </div>
         </section>
 
     </main>
 
     <!-- ================= MODALS ================= -->
+
+    <!-- Share Receipt Modal -->
+    <div id="share-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 overflow-hidden border border-slate-100">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="font-bold text-slate-900">📲 Share Session Notice</h3>
+                <button onclick="closeModal('share-modal')" class="text-slate-400 hover:text-slate-600 text-xl">&times;</button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-slate-500">Preview of the invoice summary to send to parent:</p>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto" id="share-text-preview"></div>
+
+                <div class="grid grid-cols-2 gap-3 pt-2">
+                    <button id="btn-copy-receipt" onclick="copyReceiptText()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2.5 rounded-xl transition border border-slate-200 flex items-center justify-center gap-2">
+                        📋 Copy Text
+                    </button>
+                    <a id="btn-whatsapp-receipt" href="#" target="_blank" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-2.5 rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+                        💬 WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Add/Edit Student Modal -->
     <div id="student-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
@@ -517,6 +539,44 @@
             }
         }
 
+        let currentShareText = "";
+
+        function openShareModal(sessionId) {
+            const session = state.sessions.find(s => s.id === sessionId);
+            if (!session) return;
+            const student = state.students.find(s => s.id === session.studentId);
+            const studentName = student ? student.name : 'Student';
+            const subject = student ? student.subject : 'Tuition';
+            const phone = student && student.phone ? student.phone.replace(/[^0-9]/g, '') : '';
+
+            const statusText = session.paid ? '✅ PAID' : '⏳ PAYMENT DUE';
+
+            currentShareText = `📚 *Tuition Lesson Summary*\n----------------------------------\n👤 *Student:* ${studentName}\n📖 *Subject:* ${subject}\n📅 *Date:* ${session.date}\n⏱️ *Duration:* ${session.hours} hour(s)\n📝 *Topic:* ${session.topic}\n💰 *Amount:* $${session.amount.toFixed(2)}\n📌 *Status:* ${statusText}\n----------------------------------\nThank you! 🙏`;
+
+            document.getElementById('share-text-preview').textContent = currentShareText;
+
+            // Setup WhatsApp Link
+            const waButton = document.getElementById('btn-whatsapp-receipt');
+            const encodedMsg = encodeURIComponent(currentShareText);
+            if (phone) {
+                waButton.href = `https://wa.me/${phone}?text=${encodedMsg}`;
+            } else {
+                waButton.href = `https://wa.me/?text=${encodedMsg}`;
+            }
+
+            openModal('share-modal');
+        }
+
+        function copyReceiptText() {
+            const textArea = document.createElement("textarea");
+            textArea.value = currentShareText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast('Receipt copied to clipboard!');
+        }
+
         // Render calculations and UI components
         function renderAll() {
             renderDashboard();
@@ -663,7 +723,10 @@
                                 ${se.paid ? 'Paid' : 'Unpaid'}
                             </button>
                         </td>
-                        <td class="p-3 text-right">
+                        <td class="p-3 text-right flex justify-end gap-2">
+                            <button onclick="openShareModal('${se.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-indigo-200 flex items-center gap-1">
+                                📲 Share
+                            </button>
                             <button onclick="deleteSession('${se.id}')" class="text-slate-400 hover:text-rose-600 text-xs font-medium transition">Remove</button>
                         </td>
                     </tr>
@@ -697,8 +760,13 @@
                             <td class="p-3">${se.date}</td>
                             <td class="p-3">${se.topic}</td>
                             <td class="p-3 font-semibold text-rose-600">$${se.amount.toFixed(2)}</td>
-                            <td class="p-3 text-right">
-                                <button onclick="togglePaymentStatus('${se.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition shadow-sm">Mark as Paid</button>
+                            <td class="p-3 text-right flex justify-end gap-2">
+                                <button onclick="openShareModal('${se.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition border border-indigo-200">
+                                    📲 Share Notice
+                                </button>
+                                <button onclick="togglePaymentStatus('${se.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition shadow-sm">
+                                    Mark as Paid
+                                </button>
                             </td>
                         </tr>
                     `;
