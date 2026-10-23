@@ -32,6 +32,7 @@
                 <button onclick="switchTab('students')" id="nav-students" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Students</button>
                 <button onclick="switchTab('sessions')" id="nav-sessions" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Sessions</button>
                 <button onclick="switchTab('finances')" id="nav-finances" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Finances</button>
+                <button onclick="switchTab('attendance')" id="nav-attendance" class="px-4 py-2 rounded-lg text-sm font-medium transition-all text-indigo-100 hover:text-white hover:bg-indigo-600">Student Attendance</button>
             </nav>
         </div>
     </header>
@@ -367,6 +368,70 @@
             </form>
         </div>
     </div>
+
+
+        <!-- ================= STUDENT ATTENDANCE TAB ================= -->
+        <section id="tab-attendance" class="tab-content space-y-6">
+            <div class="max-w-3xl mx-auto">
+                <div class="mb-6">
+                    <p class="text-sm font-semibold uppercase tracking-wider text-indigo-600">Student Portal</p>
+                    <h2 class="mt-1 text-2xl font-bold text-slate-900">Submit Your Attendance</h2>
+                    <p class="mt-2 text-sm text-slate-600">Choose your class, enter your Student ID and today's session PIN, then mark Present or Absent.</p>
+                </div>
+
+                <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+                    <div class="mb-5 flex items-start gap-3 rounded-xl bg-indigo-50 p-4 text-sm text-indigo-900">
+                        <span class="text-xl">🔐</span>
+                        <p>Use the six-digit PIN provided by your tutor for today's class. Do not share the PIN outside your class.</p>
+                    </div>
+
+                    <form id="attendance-form" class="space-y-5" onsubmit="submitStudentAttendance(event)">
+                        <div>
+                            <label for="attendance-class" class="mb-1.5 block text-sm font-semibold text-slate-700">Class</label>
+                            <select id="attendance-class" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                                <option value="">Loading classes…</option>
+                            </select>
+                            <p id="attendance-class-help" class="mt-1 text-xs text-slate-500">Class options are loaded from the attendance database.</p>
+                        </div>
+
+                        <div>
+                            <label for="attendance-student-id" class="mb-1.5 block text-sm font-semibold text-slate-700">Student ID</label>
+                            <input id="attendance-student-id" required autocomplete="off" maxlength="40" placeholder="e.g. S001" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm uppercase outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                        </div>
+
+                        <div>
+                            <label for="attendance-pin" class="mb-1.5 block text-sm font-semibold text-slate-700">Session PIN</label>
+                            <input id="attendance-pin" required inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit PIN" class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm tracking-[0.25em] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100">
+                        </div>
+
+                        <fieldset>
+                            <legend class="mb-2 block text-sm font-semibold text-slate-700">Attendance status</legend>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="attendance-status" value="Present" required class="peer sr-only">
+                                    <span class="flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-4 py-4 font-semibold text-slate-700 transition peer-checked:border-emerald-500 peer-checked:bg-emerald-50 peer-checked:text-emerald-700">
+                                        <span>✅</span> Present
+                                    </span>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="attendance-status" value="Absent" required class="peer sr-only">
+                                    <span class="flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 px-4 py-4 font-semibold text-slate-700 transition peer-checked:border-rose-500 peer-checked:bg-rose-50 peer-checked:text-rose-700">
+                                        <span>❌</span> Absent
+                                    </span>
+                                </label>
+                            </div>
+                        </fieldset>
+
+                        <button id="attendance-submit" type="submit" class="w-full rounded-xl bg-indigo-600 px-5 py-3.5 font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60">
+                            Submit Attendance
+                        </button>
+                    </form>
+
+                    <div id="attendance-result" role="status" aria-live="polite" class="mt-5 hidden rounded-xl p-4 text-sm"></div>
+                </div>
+                <p class="mt-4 text-center text-xs text-slate-500">If you selected the wrong status, contact your tutor. Attendance records may be limited to one submission per student per session.</p>
+            </div>
+        </section>
 
     <script>
         // Initial Mock Data if LocalStorage is empty
@@ -774,9 +839,153 @@
             }
         }
 
+
+        // ================= GOOGLE SHEETS ATTENDANCE INTEGRATION =================
+        const ATTENDANCE_API_URL = "https://script.google.com/macros/s/AKfycbwIJGefDlyiQmYFuj-ZgiTgA8xl5DD4Ey1Hra2DCX4h2tfqbGAqr1Yvmno1yn0GMSkE2g/exec";
+
+        function attendanceMessage(message, kind = "info") {
+            const box = document.getElementById("attendance-result");
+            if (!box) return;
+            const styles = {
+                success: "bg-emerald-50 text-emerald-800 border border-emerald-200",
+                error: "bg-rose-50 text-rose-800 border border-rose-200",
+                info: "bg-sky-50 text-sky-800 border border-sky-200"
+            };
+            box.className = "mt-5 rounded-xl p-4 text-sm " + (styles[kind] || styles.info);
+            box.textContent = message;
+            box.classList.remove("hidden");
+        }
+
+        function attendanceJsonp(params, timeoutMs = 10000) {
+            return new Promise((resolve, reject) => {
+                const callbackName = "tutorProJsonp_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+                const script = document.createElement("script");
+                const query = new URLSearchParams({ ...params, callback: callbackName });
+                let finished = false;
+                const cleanup = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    delete window[callbackName];
+                    script.remove();
+                };
+                const timer = setTimeout(() => {
+                    cleanup();
+                    reject(new Error("The attendance server did not respond. Please try again."));
+                }, timeoutMs);
+                window[callbackName] = (data) => {
+                    cleanup();
+                    resolve(data);
+                };
+                script.onerror = () => {
+                    cleanup();
+                    reject(new Error("Could not connect to the attendance server."));
+                };
+                script.src = ATTENDANCE_API_URL + "?" + query.toString();
+                document.body.appendChild(script);
+            });
+        }
+
+        async function loadAttendanceClasses() {
+            const select = document.getElementById("attendance-class");
+            if (!select) return;
+            select.innerHTML = '<option value="">Loading classes…</option>';
+            try {
+                const result = await attendanceJsonp({ action: "classes" });
+                if (!result || result.ok === false) throw new Error(result?.message || "Could not load classes.");
+                const classes = Array.isArray(result.classes) ? result.classes : (Array.isArray(result.data) ? result.data : []);
+                select.innerHTML = '<option value="">Select your class</option>';
+                classes.forEach(item => {
+                    const className = typeof item === "string" ? item : (item.className || item.class || item.name || "");
+                    if (!className) return;
+                    const option = document.createElement("option");
+                    option.value = className;
+                    option.textContent = className;
+                    select.appendChild(option);
+                });
+                if (!select.options.length || select.options.length === 1) {
+                    select.innerHTML = '<option value="">No classes available</option>';
+                    attendanceMessage("No active classes were returned. Please ask your tutor to check the Students sheet.", "error");
+                }
+            } catch (error) {
+                select.innerHTML = '<option value="">Class list unavailable</option>';
+                document.getElementById("attendance-class-help").textContent =
+                    "Could not load the class list. The Apps Script endpoint may need JSONP support.";
+                attendanceMessage(error.message + " If this continues, the Apps Script doGet function must support the callback parameter.", "error");
+            }
+        }
+
+        function makeAttendanceRequestId() {
+            return "TP-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+        }
+
+        async function submitStudentAttendance(event) {
+            event.preventDefault();
+            const button = document.getElementById("attendance-submit");
+            const className = document.getElementById("attendance-class").value;
+            const studentId = document.getElementById("attendance-student-id").value.trim().toUpperCase();
+            const pin = document.getElementById("attendance-pin").value.trim();
+            const status = document.querySelector('input[name="attendance-status"]:checked')?.value;
+
+            if (!className || !studentId || !/^\d{6}$/.test(pin) || !status) {
+                attendanceMessage("Please complete every field and enter a six-digit session PIN.", "error");
+                return;
+            }
+
+            const requestId = makeAttendanceRequestId();
+            button.disabled = true;
+            button.textContent = "Submitting…";
+            attendanceMessage("Submitting your attendance. Please keep this page open.", "info");
+
+            try {
+                // Apps Script POST responses are often opaque cross-origin responses.
+                // Send the request, then poll the server's request-status endpoint.
+                const body = new URLSearchParams({
+                    action: "submit",
+                    studentId,
+                    className,
+                    pin,
+                    status,
+                    requestId
+                });
+                await fetch(ATTENDANCE_API_URL, {
+                    method: "POST",
+                    mode: "no-cors",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+                    body: body.toString()
+                });
+
+                let result = null;
+                for (let attempt = 0; attempt < 8; attempt++) {
+                    await new Promise(resolve => setTimeout(resolve, 1200));
+                    try {
+                        result = await attendanceJsonp({ action: "check", requestId }, 7000);
+                        if (result && (result.recorded === true || result.status === "success" || result.error || result.ok === false)) break;
+                    } catch (pollError) {
+                        if (attempt === 7) throw pollError;
+                    }
+                }
+
+                if (result && result.ok === true && result.recorded === true) {
+                    attendanceMessage(result.message || ("Attendance submitted successfully: " + status + "."), "success");
+                    document.getElementById("attendance-form").reset();
+                } else if (result && (result.ok === false || result.status === "error" || result.error)) {
+                    attendanceMessage(result.message || result.error || "The server rejected the attendance submission. Check your Student ID, class and session PIN.", "error");
+                } else {
+                    attendanceMessage("Your request was sent, but confirmation was not received yet. Please check with your tutor before submitting again.", "info");
+                }
+            } catch (error) {
+                attendanceMessage(error.message || "Could not submit attendance. Please try again or contact your tutor.", "error");
+            } finally {
+                button.disabled = false;
+                button.textContent = "Submit Attendance";
+            }
+        }
+
         // Initialize App on load
         window.onload = function() {
             renderAll();
+            loadAttendanceClasses();
         };
     </script>
 </body>
